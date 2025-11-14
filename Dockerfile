@@ -4,6 +4,8 @@ ARG PYTHON_VERSION=3.11.9
 ARG PIP_VERSION=24.0
 ARG SETUPTOOLS_VERSION=78.1.1
 FROM python:${PYTHON_VERSION}-slim-bookworm AS base
+ARG PIP_VERSION
+ARG SETUPTOOLS_VERSION
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PIP_NO_CACHE_DIR=1 \
@@ -11,6 +13,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 WORKDIR /app
 RUN apt-get update \
     && apt-get upgrade -y --no-install-recommends \
+    && python -m pip install --no-cache-dir --upgrade "pip==${PIP_VERSION}" "setuptools==${SETUPTOOLS_VERSION}" \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
