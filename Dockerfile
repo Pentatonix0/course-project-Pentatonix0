@@ -2,6 +2,7 @@
 
 ARG PYTHON_VERSION=3.11.9
 ARG PIP_VERSION=24.0
+ARG SETUPTOOLS_VERSION=78.1.1
 FROM python:${PYTHON_VERSION}-slim-bookworm AS base
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
@@ -15,11 +16,12 @@ RUN apt-get update \
 
 FROM base AS deps
 ARG PIP_VERSION
+ARG SETUPTOOLS_VERSION
 ENV VIRTUAL_ENV=/opt/venv \
     PATH="/opt/venv/bin:${PATH}"
 RUN python -m venv "${VIRTUAL_ENV}"
 COPY requirements.txt .
-RUN pip install --no-cache-dir --upgrade "pip==${PIP_VERSION}" \
+RUN pip install --no-cache-dir --upgrade "pip==${PIP_VERSION}" "setuptools==${SETUPTOOLS_VERSION}" \
     && pip install --no-cache-dir -r requirements.txt
 
 FROM deps AS tester

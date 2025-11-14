@@ -1,3 +1,4 @@
 CVE-2025-6020 # No upstream fix for linux-pam yet; tracked in Debian security tracker.
 CVE-2025-7458 # SQLite integer overflow has no patched Debian release at the moment.
 CVE-2023-45853 # zlib upstream closed as will_not_fix; waiting for Debian backport.
+CVE-2024-23342 # ecdsa has no fixed version released yet; tracking upstream issue.
