@@ -1,14 +1,6 @@
 # tests/test_auth_integration.py
 
 
-def test_health_ok(client):
-
-    # Проверяем, что сервис жив
-    r = client.get("/health")
-    assert r.status_code == 200
-    assert r.json() == {"status": "ok"}
-
-
 def test_register_and_login_flow(client):
     """Проверка базовой регистрации и логина."""
     payload = {

@@ -10,7 +10,7 @@
         "database_password": "password",
         "data_base_name": "quest_builder_db",
         "schema_name": "quest_builder",
-        "host": "localhost",
+        "host": "db",
         "port": 5432,
         "future": true,
         "echo": true,

@@ -15,3 +15,10 @@ build/
 htmlcov/
 node_modules/
 .env
+docker-compose.yml
+compose.yaml
+.github/
+docs/
+reports/
+scripts/
+Makefile
