@@ -1,0 +1,20 @@
+{
+    "server_config": {
+        "host": "localhost",
+        "port": 8021,
+        "reload": false,
+        "log_level": "info"
+    },
+    "database_config": {
+        "database_user": "postgres_user",
+        "database_password": "password",
+        "data_base_name": "quest_builder_db",
+        "schema_name": "quest_builder",
+        "host": "localhost",
+        "port": 5432,
+        "future": true,
+        "echo": true,
+        "pool_size": 5,
+        "max_overflow": 10
+    }
+}
