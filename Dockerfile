@@ -1,20 +1,42 @@
-# Build stage
-FROM python:3.11-slim AS build
+# syntax=docker/dockerfile:1.7
+
+ARG PYTHON_VERSION=3.11.9
+FROM python:${PYTHON_VERSION}-slim-bookworm AS base
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PIP_NO_CACHE_DIR=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1
 WORKDIR /app
-COPY requirements.txt requirements-dev.txt ./
-RUN pip install --no-cache-dir -r requirements.txt -r requirements-dev.txt
+
+FROM base AS deps
+ENV VIRTUAL_ENV=/opt/venv \
+    PATH="/opt/venv/bin:${PATH}"
+RUN python -m venv "${VIRTUAL_ENV}"
+COPY requirements.txt .
+RUN pip install --upgrade pip \
+    && pip install --no-cache-dir -r requirements.txt
+
+FROM deps AS tester
+COPY requirements-dev.txt .
+RUN pip install --no-cache-dir -r requirements-dev.txt
 COPY . .
 RUN pytest -q
 
-# Runtime stage
-FROM python:3.11-slim
+FROM base AS runtime
+ARG APP_USER=app
+ARG APP_UID=10001
+ARG APP_GID=10001
+RUN groupadd --system --gid "${APP_GID}" "${APP_USER}" \
+    && useradd --system --no-create-home --uid "${APP_UID}" --gid "${APP_GID}" "${APP_USER}"
+ENV PATH="/opt/venv/bin:${PATH}"
 WORKDIR /app
-RUN useradd -m appuser
-COPY --from=build /usr/local/lib/python3.11 /usr/local/lib/python3.11
-COPY --from=build /usr/local/bin /usr/local/bin
-COPY . .
-EXPOSE 8000
-HEALTHCHECK CMD curl -f http://localhost:8000/health || exit 1
-USER appuser
-ENV PYTHONUNBUFFERED=1
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+COPY --from=deps --chown=${APP_USER}:${APP_USER} /opt/venv /opt/venv
+COPY --chown=${APP_USER}:${APP_USER} app ./app
+COPY --chown=${APP_USER}:${APP_USER} applied_files ./applied_files
+COPY --chown=${APP_USER}:${APP_USER} main.py ./main.py
+RUN mkdir -p applied_files/logs \
+    && chown -R "${APP_USER}:${APP_USER}" applied_files
+EXPOSE 8021
+HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 CMD ["python", "-c", "import sys, urllib.request; urllib.request.urlopen('http://127.0.0.1:8021/health', timeout=2).read()"]
+USER ${APP_USER}
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8021"]

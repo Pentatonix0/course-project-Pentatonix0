@@ -42,12 +42,27 @@ def set_config(config_dir: str = None) -> CoreDto:
 
     db_host = os.getenv("DB_HOST")
     server_host = os.getenv("SERVER_HOST")
+    db_port = os.getenv("DB_PORT")
+    db_user = os.getenv("DB_USER") or os.getenv("POSTGRES_USER")
+    db_password = os.getenv("DB_PASSWORD") or os.getenv("POSTGRES_PASSWORD")
+    db_name = os.getenv("DB_NAME") or os.getenv("POSTGRES_DB")
     if db_host:
         logger.info(f"DB_HOST from env ={db_host}")
         conf.database_config.host = db_host
     if server_host:
         logger.info(f"SERVER_HOST from env ={server_host}")
         conf.server_config.host = server_host
+    if db_port:
+        try:
+            conf.database_config.port = int(db_port)
+        except ValueError:
+            logger.warning("Invalid DB_PORT value, keeping default")
+    if db_user:
+        conf.database_config.database_user = db_user
+    if db_password:
+        conf.database_config.database_password = db_password
+    if db_name:
+        conf.database_config.data_base_name = db_name
     return conf
 
 

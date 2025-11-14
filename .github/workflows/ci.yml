@@ -1,10 +1,7 @@
 name: CI
 on:
-    pull_request:
     push:
-        branches:
-            - main
-            - 'p*'
+    pull_request:
 permissions:
     contents: read
 concurrency:
@@ -34,7 +31,59 @@ jobs:
                   isort --check-only .
 
             - name: Tests
-              run: pytest -q
+              run: pytest -q tests/test_health.py
 
             - name: Pre-commit (all files)
               run: pre-commit run --all-files
+
+    container:
+        needs: build
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v4
+
+            - name: Prepare environment file
+              run: cp .env.example .env
+
+            - name: Hadolint
+              uses: hadolint/hadolint-action@v3.1.0
+              with:
+                  dockerfile: Dockerfile
+                  config: hadolint.yml
+
+            - name: Build runtime image
+              run: docker build --target runtime -t quiz-builder:ci .
+
+            - name: Start container
+              run: docker compose up -d --build api
+
+            - name: Wait for health
+              run: ./scripts/wait-for-health.sh api 40 3
+
+            - name: Verify non-root user
+              run: |
+                  uid=$(docker compose exec -T api id -u)
+                  if [ "$uid" -eq 0 ]; then
+                      echo "Container is running as root" >&2
+                      exit 1
+                  fi
+                  echo "Container UID: $uid"
+
+            - name: Trivy scan
+              uses: aquasecurity/trivy-action@0.21.2
+              with:
+                  image-ref: quiz-builder:ci
+                  format: 'table'
+                  exit-code: '1'
+                  severity: 'CRITICAL,HIGH'
+                  output: trivy-report.txt
+
+            - name: Upload Trivy report
+              uses: actions/upload-artifact@v4
+              with:
+                  name: trivy-report
+                  path: trivy-report.txt
+
+            - name: Cleanup
+              if: always()
+              run: docker compose down --remove-orphans

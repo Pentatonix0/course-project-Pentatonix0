@@ -1,0 +1,60 @@
+services:
+  db:
+    image: postgres:16.3-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-quest_builder_db}
+      POSTGRES_USER: ${DB_USER:-postgres_user}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-password}
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-postgres_user} -d ${POSTGRES_DB:-quest_builder_db}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  api:
+    image: quiz-builder:local
+    build:
+      context: .
+      target: runtime
+    environment:
+      APP_HOST: ${APP_HOST:-0.0.0.0}
+      APP_PORT: ${APP_PORT:-8021}
+      SECRET_KEY: ${SECRET_KEY:-change-me}
+      DB_HOST: ${DB_HOST:-db}
+      DB_PORT: ${DB_PORT:-5432}
+      DB_USER: ${DB_USER:-postgres_user}
+      DB_PASSWORD: ${DB_PASSWORD:-password}
+      DB_NAME: ${POSTGRES_DB:-quest_builder_db}
+      SERVER_HOST: ${APP_HOST:-0.0.0.0}
+    ports:
+      - "${APP_PORT:-8021}:8021"
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "python -c \"import urllib.request, sys; urllib.request.urlopen('http://127.0.0.1:${APP_PORT:-8021}/health', timeout=2)\"",
+        ]
+      interval: 30s
+      timeout: 5s
+      start_period: 15s
+      retries: 5
+    restart: unless-stopped
+    command:
+      [
+        "uvicorn",
+        "main:app",
+        "--host",
+        "${APP_HOST:-0.0.0.0}",
+        "--port",
+        "${APP_PORT:-8021}",
+      ]
+
+volumes:
+  db_data:
