@@ -1,0 +1,48 @@
+{
+    "bomFormat": "CycloneDX",
+    "specVersion": "1.5",
+    "version": 1,
+    "metadata": {
+        "component": {
+            "bom-ref": "app",
+            "name": "course-project-Pentatonix0",
+            "type": "application"
+        },
+        "properties": [
+            {
+                "name": "note",
+                "value": "Seed SBOM staged locally; workflow ci-sbom-sca.yml refreshes it via Syft in CI."
+            }
+        ]
+    },
+    "components": [
+        {
+            "bom-ref": "pkg:pypi/fastapi@0.115.6",
+            "name": "fastapi",
+            "purl": "pkg:pypi/fastapi@0.115.6",
+            "type": "library",
+            "version": "0.115.6"
+        },
+        {
+            "bom-ref": "pkg:pypi/starlette@0.41.2",
+            "name": "starlette",
+            "purl": "pkg:pypi/starlette@0.41.2",
+            "type": "library",
+            "version": "0.41.2"
+        },
+        {
+            "bom-ref": "pkg:pypi/uvicorn@0.32.0",
+            "name": "uvicorn",
+            "purl": "pkg:pypi/uvicorn@0.32.0",
+            "type": "library",
+            "version": "0.32.0"
+        },
+        {
+            "bom-ref": "pkg:pypi/sqlalchemy@2.0.44",
+            "name": "SQLAlchemy",
+            "purl": "pkg:pypi/sqlalchemy@2.0.44",
+            "type": "library",
+            "version": "2.0.44"
+        }
+    ]
+}
