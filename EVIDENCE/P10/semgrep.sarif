@@ -1,0 +1,21 @@
+{
+    "$schema": "https://schemastore.azurewebsites.net/schemas/json/sarif-2.1.0.json",
+    "version": "2.1.0",
+    "runs": [
+        {
+            "tool": {
+                "driver": {
+                    "name": "semgrep",
+                    "informationUri": "https://semgrep.dev",
+                    "version": "placeholder",
+                    "rules": []
+                }
+            },
+            "results": [],
+            "automationDetails": {
+                "id": "p10-sast-secrets-placeholder",
+                "description": "CI will overwrite this file with real findings from semgrep ci."
+            }
+        }
+    ]
+}
