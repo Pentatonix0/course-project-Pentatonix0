@@ -1,0 +1,7 @@
+{
+    "gitleaksVersion": "placeholder",
+    "scanTarget": "workspace",
+    "results": [],
+    "errors": [],
+    "notes": "CI workflow overwrites this file with the current detection report."
+}

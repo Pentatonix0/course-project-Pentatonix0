@@ -1,0 +1,12 @@
+title = "Course project gitleaks config"
+
+[allowlist]
+description = "Allow example placeholders and evidence artifacts; real secrets still fail."
+regexes = [
+    "(?i)(CHANGEME|PLACEHOLDER|EXAMPLE|DUMMY|TOKEN_HERE)",
+    "postgres://[^:]+:[^@]+@localhost:[0-9]+/.+"
+]
+paths = [
+    "^\\.env\\.example$",
+    "^EVIDENCE/.*"
+]

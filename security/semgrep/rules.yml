@@ -1,0 +1,13 @@
+rules:
+    - id: pentatonix0-avoid-shell-true
+      languages:
+          - python
+      message: Avoid using subprocess.run with shell=True; prefer explicit command args.
+      pattern-either:
+          - pattern: subprocess.run(..., shell=True, ...)
+          - pattern: subprocess.Popen(..., shell=True, ...)
+      severity: WARNING
+      metadata:
+          confidence: MEDIUM
+          category: security
+          cwe: "CWE-78: Improper Neutralization of Special Elements in OS Command"
