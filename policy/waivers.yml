@@ -1,0 +1,30 @@
+metadata:
+    owner: security-team
+    updated: 2025-02-18
+    review_cycle_days: 30
+    notes: >
+        Draft waiver registry for SBOM/SCA findings. Entries mirror items from
+        .trivyignore and will be refreshed once CI-generated reports are available.
+
+waivers:
+    - id: CVE-2025-62727
+      component: starlette
+      version: 0.41.2
+      status: accepted
+      expires: 2025-04-01
+      justification: Upstream has not published a fixed Starlette compatible with FastAPI; tracked via FastAPI pin.
+      compensating_controls:
+          - Added runtime non-root user and container hardening.
+          - Monitoring upstream FastAPI/Starlette releases; planned bump when patch lands.
+      issue: https://github.com/encode/starlette/issues
+
+    - id: CVE-2024-23342
+      component: ecdsa
+      version: 0.19.1
+      status: pending
+      expires: 2025-03-15
+      justification: Awaiting upstream patched release; no exploit path identified in current usage.
+      compensating_controls:
+          - Keep jwt-related dependencies pinned and reviewed in SBOM.
+          - Re-scan weekly via CI workflow.
+      issue: https://github.com/tlsfuzzer/python-ecdsa/issues/393

@@ -1,0 +1,45 @@
+{
+    "source": {
+        "type": "sbom",
+        "target": "EVIDENCE/P09/sbom.json"
+    },
+    "matches": [
+        {
+            "vulnerability": {
+                "id": "CVE-2025-62727",
+                "severity": "High",
+                "dataSource": "https://github.com/encode/starlette/issues"
+            },
+            "artifact": {
+                "name": "starlette",
+                "version": "0.41.2",
+                "type": "python"
+            }
+        },
+        {
+            "vulnerability": {
+                "id": "CVE-2024-23342",
+                "severity": "Medium",
+                "dataSource": "https://github.com/tlsfuzzer/python-ecdsa/issues/393"
+            },
+            "artifact": {
+                "name": "ecdsa",
+                "version": "0.19.1",
+                "type": "python"
+            }
+        },
+        {
+            "vulnerability": {
+                "id": "CVE-2023-45853",
+                "severity": "Low",
+                "dataSource": "https://security-tracker.debian.org/tracker/CVE-2023-45853"
+            },
+            "artifact": {
+                "name": "zlib",
+                "version": "1.2.13",
+                "type": "os"
+            }
+        }
+    ],
+    "notes": "Draft report to accompany workflow; GitHub Actions job regenerates this using Grype."
+}

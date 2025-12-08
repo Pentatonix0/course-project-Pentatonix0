@@ -1,0 +1,53 @@
+name: Security - SBOM & SCA
+
+on:
+    workflow_dispatch:
+    push:
+        paths:
+            - 'requirements*.txt'
+            - '**.py'
+            - '.github/workflows/ci-sbom-sca.yml'
+    pull_request:
+        paths:
+            - 'requirements*.txt'
+            - '**.py'
+            - '.github/workflows/ci-sbom-sca.yml'
+
+permissions:
+    contents: read
+
+jobs:
+    sbom-sca:
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v4
+
+            - name: Ensure evidence directory
+              run: mkdir -p EVIDENCE/P09
+
+            - name: Generate SBOM (Syft, CycloneDX)
+              run: |
+                  docker run --rm -v ${{ github.workspace }}:/work -w /work anchore/syft:latest dir:. -o cyclonedx-json > EVIDENCE/P09/sbom.json
+
+            - name: Scan SBOM with Grype
+              run: |
+                  docker run --rm -v ${{ github.workspace }}:/work -w /work anchore/grype:latest sbom:/work/EVIDENCE/P09/sbom.json -o json > EVIDENCE/P09/sca_report.json
+
+            - name: Build SCA summary
+              run: |
+                  echo "# SCA summary" > EVIDENCE/P09/sca_summary.md
+                  if [ -s EVIDENCE/P09/sca_report.json ]; then
+                      jq '[.matches[].vulnerability.severity] | group_by(.) | map({(.[0]): length}) | add' EVIDENCE/P09/sca_report.json >> EVIDENCE/P09/sca_summary.md || true
+                  else
+                      echo "Report missing" >> EVIDENCE/P09/sca_summary.md
+                  fi
+
+            - name: Upload SBOM & SCA artifacts
+              if: always()
+              uses: actions/upload-artifact@v4
+              with:
+                  name: p09-sbom-sca
+                  path: |
+                      EVIDENCE/P09/sbom.json
+                      EVIDENCE/P09/sca_report.json
+                      EVIDENCE/P09/sca_summary.md
