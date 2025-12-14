@@ -40,20 +40,27 @@ jobs:
         run: |
           docker run --rm -v ${{ github.workspace }}:/repo hadolint/hadolint:latest-debian \
             hadolint --config /repo/security/hadolint.yaml --format json \
-            -o /repo/EVIDENCE/P12/hadolint_report.json /repo/Dockerfile || true
+            /repo/Dockerfile > /repo/EVIDENCE/P12/hadolint_report.json || true
 
       - name: Checkov IaC scan
         run: |
           docker run --rm -v ${{ github.workspace }}:/repo bridgecrew/checkov:latest \
-            --config-file /repo/security/checkov.yaml -d /repo/iac -o json > /repo/EVIDENCE/P12/checkov_report.json || true
+            --config-file /repo/security/checkov.yaml \
+            -d /repo/iac -o json --output-file /repo/EVIDENCE/P12/checkov_report.json || true
 
       - name: Trivy image scan
         run: |
+          TRIVY_IMAGE="ghcr.io/aquasecurity/trivy:0.54.2"
+          docker pull "${TRIVY_IMAGE}" || {
+            echo "GHCR pull failed, falling back to Docker Hub image"
+            TRIVY_IMAGE="docker.io/aquasec/trivy:0.54.2"
+            docker pull "${TRIVY_IMAGE}"
+          }
           docker run --rm \
             -v /var/run/docker.sock:/var/run/docker.sock \
             -v ${{ github.workspace }}:/repo \
             -w /repo \
-            aquasecurity/trivy:0.54.2 image \
+            "${TRIVY_IMAGE}" image \
             --config /repo/security/trivy.yaml \
             --format json \
             --security-checks vuln \
