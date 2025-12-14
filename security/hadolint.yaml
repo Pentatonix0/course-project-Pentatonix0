@@ -1,0 +1,6 @@
+ignored:
+  - DL3008 # allow using apt-get without pinning individual packages
+  - DL3009 # allow apt-get upgrade in build stage
+  - DL3013 # allow pip without explicit version pin per package (handled via requirements)
+  - DL3018 # allow not pinning apt dependencies in this context
+failure-threshold: warning

@@ -1,0 +1,5 @@
+soft_fail: true
+framework:
+  - kubernetes
+download_externals: false
+quiet: true

@@ -1,0 +1,40 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: quiz-builder
+  labels:
+    app: quiz-builder
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: quiz-builder
+  template:
+    metadata:
+      labels:
+        app: quiz-builder
+    spec:
+      containers:
+        - name: quiz-builder
+          image: quiz-builder:local
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8021
+          env:
+            - name: APP_HOST
+              value: "0.0.0.0"
+            - name: APP_PORT
+              value: "8021"
+          securityContext:
+            runAsUser: 10001
+            runAsNonRoot: true
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: false
+          resources:
+            requests:
+              cpu: 250m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+      restartPolicy: Always
