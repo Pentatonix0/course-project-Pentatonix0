@@ -31,6 +31,7 @@ jobs:
 
         steps:
             - uses: actions/checkout@v4
+
             - name: Set ZAP image
               id: zap-image
               run: echo "image=ghcr.io/zaproxy/zaproxy:stable" >> "$GITHUB_OUTPUT"
@@ -60,11 +61,17 @@ jobs:
                     IMAGE="docker.io/owasp/zap2docker-stable:latest"
                     docker pull "${IMAGE}"
                   }
+
                   docker run --rm --network host \
-                    -v ${{ github.workspace }}/EVIDENCE/P11:/zap/wrk \
+                    --user root \
+                    -v "${{ github.workspace }}/EVIDENCE/P11:/zap/wrk" \
                     -w /zap/wrk \
                     "${IMAGE}" \
-                    zap-baseline.py -t ${ZAP_TARGET} -J /zap/wrk/zap_baseline.json -r /zap/wrk/zap_baseline.html -I || true
+                    zap-baseline.py \
+                      -t "${ZAP_TARGET}" \
+                      -J zap_baseline.json \
+                      -r zap_baseline.html \
+                      -I || true
 
             - name: Check evidence directory
               if: always()
@@ -79,10 +86,11 @@ jobs:
                     echo "Target: ${ZAP_TARGET}";
                     if [ -f EVIDENCE/P11/zap_baseline.json ]; then
                       counts=$(jq -r '
-                        (reduce (.site[]?.alerts[]? // []) as $a ({"High":0,"Medium":0,"Low":0,"Informational":0};
-                          .[$a.riskdesc|split(" ")[0]] += 1
-                        ))
+                        (reduce (.site[]?.alerts[]? // []) as $a
+                          ({"High":0,"Medium":0,"Low":0,"Informational":0};
+                           .[$a.riskdesc|split(" ")[0]] += 1))
                       ' EVIDENCE/P11/zap_baseline.json 2>/dev/null || true)
+
                       if [ -n "${counts}" ]; then
                         echo "Alerts:";
                         echo "${counts}";
@@ -102,6 +110,7 @@ jobs:
                   path: |
                       EVIDENCE/P11/zap_baseline.html
                       EVIDENCE/P11/zap_baseline.json
+                  if-no-files-found: error
 
             - name: Cleanup
               if: always()
