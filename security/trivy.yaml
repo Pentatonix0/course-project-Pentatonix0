@@ -1,0 +1,12 @@
+timeout: 5m
+severity:
+  - HIGH
+  - CRITICAL
+vuln-type:
+  - os
+  - library
+security-checks:
+  - vuln
+skip-dirs:
+  - "/repo/.venv"
+  - "/repo/venv"

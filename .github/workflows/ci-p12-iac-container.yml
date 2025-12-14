@@ -1,0 +1,77 @@
+name: Security - IaC & Container (P12)
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "Dockerfile"
+      - "iac/**"
+      - "security/**"
+      - ".github/workflows/ci-p12-iac-container.yml"
+  pull_request:
+    paths:
+      - "Dockerfile"
+      - "iac/**"
+      - "security/**"
+      - ".github/workflows/ci-p12-iac-container.yml"
+
+permissions:
+  contents: read
+  packages: read
+
+concurrency:
+  group: p12-iac-container-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  iac-container:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Ensure evidence directory
+        run: mkdir -p EVIDENCE/P12
+
+      - name: Build runtime image
+        run: docker build --target runtime -t quiz-builder:p12 .
+
+      - name: Hadolint Dockerfile
+        run: |
+          docker run --rm -v ${{ github.workspace }}:/repo hadolint/hadolint:latest-debian \
+            hadolint --config /repo/security/hadolint.yaml --format json \
+            -o /repo/EVIDENCE/P12/hadolint_report.json /repo/Dockerfile || true
+
+      - name: Checkov IaC scan
+        run: |
+          docker run --rm -v ${{ github.workspace }}:/repo bridgecrew/checkov:latest \
+            --config-file /repo/security/checkov.yaml -d /repo/iac -o json > /repo/EVIDENCE/P12/checkov_report.json || true
+
+      - name: Trivy image scan
+        run: |
+          docker run --rm \
+            -v /var/run/docker.sock:/var/run/docker.sock \
+            -v ${{ github.workspace }}:/repo \
+            -w /repo \
+            aquasecurity/trivy:0.54.2 image \
+            --config /repo/security/trivy.yaml \
+            --format json \
+            --security-checks vuln \
+            --severity HIGH,CRITICAL \
+            --output /repo/EVIDENCE/P12/trivy_report.json \
+            quiz-builder:p12 || true
+
+      - name: Show evidence directory
+        if: always()
+        run: ls -l EVIDENCE/P12 || true
+
+      - name: Upload P12 artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: p12-iac-container
+          path: |
+            EVIDENCE/P12/hadolint_report.json
+            EVIDENCE/P12/checkov_report.json
+            EVIDENCE/P12/trivy_report.json
+
