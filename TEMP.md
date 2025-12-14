@@ -1,16 +1,15 @@
 Контекст
 
-Нужно было собрать минимальный CI-конвейер для ветки p08-cicd-minimal, который на push и pull_request гарантированно гоняет линтеры, тесты и минимальные проверки контейнера с воспроизводимой установкой зависимостей.
+Нужно было добавить DAST-проверку (OWASP ZAP baseline) для курсового сервиса в CI: поднять приложение на раннере, прогнать ZAP по локальному URL и сложить отчёты в `EVIDENCE/P11/` + загрузить артефакт.
 
 Что сделано
 
-- Workflow `.github/workflows/ci.yml` триггерится на push/pull_request, включает `permissions: contents: read` и `concurrency` c ключом `ci-${{ github.ref }}`, чтобы отменять параллельные прогоны.
-- Джоб `build` готовит Python 3.11 через `actions/setup-python@v5` с кешом pip и ставит зависимости из `requirements*.txt`, после чего прогоняет Ruff/Black/isort, минимальные тесты `pytest -q tests/test_health.py` и `pre-commit run --all-files`.
-- Джоб `container` переиспользует код, собирает runtime-образ (`docker build --target runtime`), поднимает сервис `api` через compose, ждёт healthcheck скриптом `scripts/wait-for-health.sh`, проверяет, что процесс не под root, и завершает docker-compose окружение даже при ошибках.
-- Дополнительные проверки: Hadolint для Dockerfile, Trivy-скан образа с артефактом `trivy-report`, таким образом требование по отчётам закрыто.
+- Создан отдельный workflow `.github/workflows/ci-p11-dast.yml`, триггеры на push/pull_request/workflow_dispatch, `concurrency` на `dast-zap-${{ github.ref }}` и разрешения `contents: read`, `packages: read` (для pull образов из GHCR).
+- Джоб `zap-baseline` собирает runtime-образ, поднимает стек через `docker compose up -d api`, ждёт health чек `./scripts/wait-for-health.sh api 40 3` (сервис слушает `http://localhost:8021/health`).
+- Запуск ZAP: тянем образ `ghcr.io/zaproxy/zaproxy:stable` (авторизация через `GITHUB_TOKEN`), при недоступности GHCR fallback на `docker.io/owasp/zap2docker-stable:latest`. Запускаем `zap-baseline.py -t http://localhost:8021 -J /zap/wrk/zap_baseline.json -r /zap/wrk/zap_baseline.html -I`, рабочая директория и volume мапятся на `EVIDENCE/P11`.
+- После прогона выкладываем артефакт `p11-dast-zap` с `zap_baseline.html/json` и пишем краткую сводку в `GITHUB_STEP_SUMMARY`. Каталог `EVIDENCE/P11/` зафиксирован в репо (README).
 
 Как проверял
 
-- Workflow прогонялся в GitHub Actions на ветке `p08-cicd-minimal`: оба джоба прошли зелёным, в разделе Artifacts приложен `trivy-report`.
-- Минимальный тест `pytest -q tests/test_health.py` запускал локально перед пушем, чтобы убедиться, что API стартует и health ручка отвечает.
-- Перед пушем собирал контейнер и проверял compose `docker compose up -d --build api`, чтобы healthcheck в CI не падал.
+- Workflow гонялся в GitHub Actions на ветке `p11-dast-zap`; стек поднимается, ZAP образ теперь успешно тянется (через GHCR либо fallback). Следующий прогон должен сформировать `EVIDENCE/P11/zap_baseline.*` и артефакт `p11-dast-zap`.
+- Healthcheck сервиса проверяется скриптом в пайплайне; локально перед пушем собирал и запускал `docker compose up -d --build api`, чтобы убедиться, что `/health` отвечает 200 на 8021.
