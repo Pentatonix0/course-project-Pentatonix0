@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: quiz-builder
+  labels:
+    app: quiz-builder
+spec:
+  type: ClusterIP
+  selector:
+    app: quiz-builder
+  ports:
+    - name: http
+      port: 8021
+      targetPort: 8021
