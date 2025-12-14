@@ -38,6 +38,7 @@ jobs:
 
       - name: Hadolint Dockerfile
         run: |
+          mkdir -p EVIDENCE/P12
           docker run --rm -v ${{ github.workspace }}:/repo hadolint/hadolint:latest-debian \
             hadolint --config /repo/security/hadolint.yaml --format json \
             /repo/Dockerfile > /repo/EVIDENCE/P12/hadolint_report.json || true
@@ -45,6 +46,7 @@ jobs:
 
       - name: Checkov IaC scan
         run: |
+          mkdir -p EVIDENCE/P12
           docker run --rm -v ${{ github.workspace }}:/repo bridgecrew/checkov:latest \
             --config-file /repo/security/checkov.yaml \
             -d /repo/iac -o json > /repo/EVIDENCE/P12/checkov_report.json || true
@@ -52,6 +54,7 @@ jobs:
 
       - name: Trivy image scan
         run: |
+          mkdir -p EVIDENCE/P12
           TRIVY_IMAGE="docker.io/aquasec/trivy:latest"
           docker pull "${TRIVY_IMAGE}" || {
             echo "Docker Hub pull failed, trying GHCR"
