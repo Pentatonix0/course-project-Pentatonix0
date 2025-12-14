@@ -41,16 +41,16 @@ jobs:
           mkdir -p EVIDENCE/P12
           docker run --rm -v ${{ github.workspace }}:/repo hadolint/hadolint:latest-debian \
             hadolint --config /repo/security/hadolint.yaml --format json \
-            /repo/Dockerfile > /repo/EVIDENCE/P12/hadolint_report.json || true
-          if [ ! -s /repo/EVIDENCE/P12/hadolint_report.json ]; then echo "[]" > /repo/EVIDENCE/P12/hadolint_report.json; fi
+            /repo/Dockerfile > "${GITHUB_WORKSPACE}/EVIDENCE/P12/hadolint_report.json" || true
+          if [ ! -s "${GITHUB_WORKSPACE}/EVIDENCE/P12/hadolint_report.json" ]; then echo "[]" > "${GITHUB_WORKSPACE}/EVIDENCE/P12/hadolint_report.json"; fi
 
       - name: Checkov IaC scan
         run: |
           mkdir -p EVIDENCE/P12
           docker run --rm -v ${{ github.workspace }}:/repo bridgecrew/checkov:latest \
             --config-file /repo/security/checkov.yaml \
-            -d /repo/iac -o json > /repo/EVIDENCE/P12/checkov_report.json || true
-          if [ ! -s /repo/EVIDENCE/P12/checkov_report.json ]; then echo "{}" > /repo/EVIDENCE/P12/checkov_report.json; fi
+            -d /repo/iac -o json > "${GITHUB_WORKSPACE}/EVIDENCE/P12/checkov_report.json" || true
+          if [ ! -s "${GITHUB_WORKSPACE}/EVIDENCE/P12/checkov_report.json" ]; then echo "{}" > "${GITHUB_WORKSPACE}/EVIDENCE/P12/checkov_report.json"; fi
 
       - name: Trivy image scan
         run: |
