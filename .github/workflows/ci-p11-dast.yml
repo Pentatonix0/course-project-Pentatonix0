@@ -32,7 +32,10 @@ jobs:
             - uses: actions/checkout@v4
             - name: Set ZAP image
               id: zap-image
-              run: echo "image=ghcr.io/zaproxy/zap2docker-stable:latest" >> "$GITHUB_OUTPUT"
+              run: echo "image=ghcr.io/zaproxy/zaproxy:stable" >> "$GITHUB_OUTPUT"
+
+            - name: Auth to GHCR for ZAP image
+              run: echo "${{ github.token }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
 
             - name: Ensure evidence directory
               run: mkdir -p EVIDENCE/P11
@@ -50,11 +53,16 @@ jobs:
                   ZAP_TARGET: http://localhost:8021
                   ZAP_IMAGE: ${{ steps.zap-image.outputs.image }}
               run: |
-                  docker pull "${ZAP_IMAGE}"
+                  IMAGE="${ZAP_IMAGE}"
+                  docker pull "${IMAGE}" || {
+                    echo "GHCR pull failed, falling back to Docker Hub image"
+                    IMAGE="docker.io/owasp/zap2docker-stable:latest"
+                    docker pull "${IMAGE}"
+                  }
                   docker run --rm --network host \
                     -v ${{ github.workspace }}/EVIDENCE/P11:/zap/wrk \
                     -w /zap/wrk \
-                    "${ZAP_IMAGE}" \
+                    "${IMAGE}" \
                     zap-baseline.py -t ${ZAP_TARGET} -J /zap/wrk/zap_baseline.json -r /zap/wrk/zap_baseline.html -I || true
 
             - name: Check evidence directory
