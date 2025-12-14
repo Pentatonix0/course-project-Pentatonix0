@@ -1,0 +1,89 @@
+name: Security - DAST (ZAP baseline)
+
+on:
+    workflow_dispatch:
+    push:
+        paths:
+            - 'app/**'
+            - 'main.py'
+            - 'Dockerfile'
+            - 'docker-compose.yml'
+            - '.github/workflows/ci-p11-dast.yml'
+    pull_request:
+        paths:
+            - 'app/**'
+            - 'main.py'
+            - 'Dockerfile'
+            - 'docker-compose.yml'
+            - '.github/workflows/ci-p11-dast.yml'
+
+permissions:
+    contents: read
+
+concurrency:
+    group: dast-zap-${{ github.ref }}
+    cancel-in-progress: true
+
+jobs:
+    zap-baseline:
+        runs-on: ubuntu-latest
+
+        steps:
+            - uses: actions/checkout@v4
+
+            - name: Ensure evidence directory
+              run: mkdir -p EVIDENCE/P11
+
+            - name: Build and start stack
+              env:
+                  APP_PORT: 8021
+              run: docker compose up -d --build api
+
+            - name: Wait for health
+              run: ./scripts/wait-for-health.sh api 40 3
+
+            - name: Run OWASP ZAP baseline
+              env:
+                  ZAP_TARGET: http://localhost:8021
+              run: |
+                  docker run --rm --network host \
+                    -v ${{ github.workspace }}/EVIDENCE/P11:/zap/wrk \
+                    owasp/zap2docker-stable:latest \
+                    zap-baseline.py -t ${ZAP_TARGET} -J zap_baseline.json -r zap_baseline.html -I || true
+
+            - name: Summarize alerts
+              if: always()
+              env:
+                  ZAP_TARGET: http://localhost:8021
+              run: |
+                  {
+                    echo "Target: ${ZAP_TARGET}";
+                    if [ -f EVIDENCE/P11/zap_baseline.json ]; then
+                      counts=$(jq -r '
+                        (reduce (.site[]?.alerts[]? // []) as $a ({"High":0,"Medium":0,"Low":0,"Informational":0};
+                          .[$a.riskdesc|split(" ")[0]] += 1
+                        ))
+                      ' EVIDENCE/P11/zap_baseline.json 2>/dev/null || true)
+                      if [ -n "${counts}" ]; then
+                        echo "Alerts:";
+                        echo "${counts}";
+                      else
+                        echo "Could not parse alerts";
+                      fi
+                    else
+                      echo "Report not found";
+                    fi
+                  } >> "${GITHUB_STEP_SUMMARY}" || true
+
+            - name: Upload DAST artifacts
+              if: always()
+              uses: actions/upload-artifact@v4
+              with:
+                  name: p11-dast-zap
+                  path: |
+                      EVIDENCE/P11/zap_baseline.html
+                      EVIDENCE/P11/zap_baseline.json
+
+            - name: Cleanup
+              if: always()
+              run: docker compose down --remove-orphans
