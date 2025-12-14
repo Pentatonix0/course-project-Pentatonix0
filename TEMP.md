@@ -1,15 +1,16 @@
 Контекст
 
-Нужно было добавить DAST-проверку (OWASP ZAP baseline) для курсового сервиса в CI: поднять приложение на раннере, прогнать ZAP по локальному URL и сложить отчёты в `EVIDENCE/P11/` + загрузить артефакт.
+Нужно было добавить проверки IaC и контейнера (P12): Hadolint по Dockerfile, Checkov по IaC, Trivy по образу, с отчётами в `EVIDENCE/P12/` и отдельным workflow.
 
 Что сделано
 
-- Создан отдельный workflow `.github/workflows/ci-p11-dast.yml`, триггеры на push/pull_request/workflow_dispatch, `concurrency` на `dast-zap-${{ github.ref }}` и разрешения `contents: read`, `packages: read` (для pull образов из GHCR).
-- Джоб `zap-baseline` собирает runtime-образ, поднимает стек через `docker compose up -d api`, ждёт health чек `./scripts/wait-for-health.sh api 40 3` (сервис слушает `http://localhost:8021/health`).
-- Запуск ZAP: тянем образ `ghcr.io/zaproxy/zaproxy:stable` (авторизация через `GITHUB_TOKEN`), при недоступности GHCR fallback на `docker.io/owasp/zap2docker-stable:latest`. Запускаем `zap-baseline.py -t http://localhost:8021 -J /zap/wrk/zap_baseline.json -r /zap/wrk/zap_baseline.html -I`, рабочая директория и volume мапятся на `EVIDENCE/P11`.
-- После прогона выкладываем артефакт `p11-dast-zap` с `zap_baseline.html/json` и пишем краткую сводку в `GITHUB_STEP_SUMMARY`. Каталог `EVIDENCE/P11/` зафиксирован в репо (README).
+- Создан workflow `.github/workflows/ci-p12-iac-container.yml` (push/pull_request/dispatch, `concurrency` на `p12-iac-container-${{ github.ref }}`, `permissions: contents, packages`).
+- В пайплайне собирается runtime-образ `quiz-builder:p12`, далее: Hadolint (docker образ hadolint, конфиг `security/hadolint.yaml`) выводит JSON в `EVIDENCE/P12/hadolint_report.json`; Checkov (bridgecrew/checkov, конфиг `security/checkov.yaml`) сканирует `iac/` и пишет `checkov_report.json`; Trivy (aquasec/trivy:latest, конфиг `security/trivy.yaml`) сканирует образ и пишет `trivy_report.json`.
+- Добавлены конфиги линтеров/сканеров: `security/hadolint.yaml` (ослаблены некоторые предупреждения, failure-threshold warning), `security/checkov.yaml` (soft_fail, kubernetes), `security/trivy.yaml` (HIGH/CRITICAL, vuln os+library).
+- IaC манифесты вынесены в `iac/deployment.yaml` и `iac/service.yaml` (Deployment + Service, non-root user 10001, запрет privilege escalation, ресурсы, порт 8021).
+- Каталог `EVIDENCE/P12/` с README зафиксирован в репо; workflow загружает артефакт `p12-iac-container`.
 
 Как проверял
 
-- Workflow гонялся в GitHub Actions на ветке `p11-dast-zap`; стек поднимается, ZAP образ теперь успешно тянется (через GHCR либо fallback). Следующий прогон должен сформировать `EVIDENCE/P11/zap_baseline.*` и артефакт `p11-dast-zap`.
-- Healthcheck сервиса проверяется скриптом в пайплайне; локально перед пушем собирал и запускал `docker compose up -d --build api`, чтобы убедиться, что `/health` отвечает 200 на 8021.
+- Workflow гонялся в Actions: сборка образа проходит; Trivy отчёт формируется; Hadolint/Checkov шаги теперь пишут отчёты в `EVIDENCE/P12` (исправлены пути и создание каталога). Следующий запуск должен дать полный комплект `hadolint_report.json`, `checkov_report.json`, `trivy_report.json` и артефакт.
+- Локально сверял Dockerfile/порт/healthcheck (8021, `/health`) и структуру `iac/`, чтобы сканеры находили файлы и сервис стартовал в CI.
