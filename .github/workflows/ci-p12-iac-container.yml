@@ -50,10 +50,10 @@ jobs:
 
       - name: Trivy image scan
         run: |
-          TRIVY_IMAGE="ghcr.io/aquasecurity/trivy:0.54.2"
+          TRIVY_IMAGE="docker.io/aquasec/trivy:latest"
           docker pull "${TRIVY_IMAGE}" || {
-            echo "GHCR pull failed, falling back to Docker Hub image"
-            TRIVY_IMAGE="docker.io/aquasec/trivy:0.54.2"
+            echo "Docker Hub pull failed, trying GHCR"
+            TRIVY_IMAGE="ghcr.io/aquasecurity/trivy:latest"
             docker pull "${TRIVY_IMAGE}"
           }
           docker run --rm \
