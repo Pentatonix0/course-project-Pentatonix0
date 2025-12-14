@@ -41,12 +41,14 @@ jobs:
           docker run --rm -v ${{ github.workspace }}:/repo hadolint/hadolint:latest-debian \
             hadolint --config /repo/security/hadolint.yaml --format json \
             /repo/Dockerfile > /repo/EVIDENCE/P12/hadolint_report.json || true
+          if [ ! -s /repo/EVIDENCE/P12/hadolint_report.json ]; then echo "[]" > /repo/EVIDENCE/P12/hadolint_report.json; fi
 
       - name: Checkov IaC scan
         run: |
           docker run --rm -v ${{ github.workspace }}:/repo bridgecrew/checkov:latest \
             --config-file /repo/security/checkov.yaml \
-            -d /repo/iac -o json --output-file /repo/EVIDENCE/P12/checkov_report.json || true
+            -d /repo/iac -o json > /repo/EVIDENCE/P12/checkov_report.json || true
+          if [ ! -s /repo/EVIDENCE/P12/checkov_report.json ]; then echo "{}" > /repo/EVIDENCE/P12/checkov_report.json; fi
 
       - name: Trivy image scan
         run: |
